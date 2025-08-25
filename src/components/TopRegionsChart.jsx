@@ -110,24 +110,30 @@ const TopRegionsChart = ({ data }) => {
 
       {/* Chart */}
       <div className="bg-gray-50 rounded-xl p-4">
-        <ResponsiveContainer width="100%" height={400}>
+        {/* Debug Info */}
+        <div className="mb-4 p-2 bg-blue-100 rounded text-xs text-blue-800">
+          <p>Chart Data: {chartData.length} regions | Total Revenue: ${totalRevenue.toLocaleString()} | Total Items: {totalItems.toLocaleString()}</p>
+        </div>
+        
+        <ResponsiveContainer width="100%" height={600}>
           <BarChart
             data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
               dataKey="displayName" 
-              tick={{ fontSize: 10, fill: '#374151' }}
+              tick={{ fontSize: 9, fill: '#374151' }}
               axisLine={{ stroke: '#d1d5db' }}
               interval={0}
               angle={-45}
               textAnchor="end"
-              height={80}
+              height={120}
             />
             <YAxis 
               tick={{ fontSize: 12, fill: '#6b7280' }}
               axisLine={{ stroke: '#d1d5db' }}
+              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend 

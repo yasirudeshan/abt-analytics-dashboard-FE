@@ -14,22 +14,35 @@ const TopProductsChart = ({ data }) => {
     )
   }
 
-  // Process data for chart display
+  // Process data for chart display - sort by purchase count first
   const chartData = data
+    .sort((a, b) => {
+      const aCount = a.purchase_count || a.purchaseCount || a.purchases || a.count || 0;
+      const bCount = b.purchase_count || b.purchaseCount || b.purchases || b.count || 0;
+      return bCount - aCount; // Sort descending (highest first)
+    })
     .slice(0, 20) // Show top 20 products
-    .map((item, index) => ({
-      ...item,
-      // Map backend field names to chart expectations
-      purchaseCount: item.purchase_count || 0,
-      stockQuantity: item.current_stock || 0,
-      displayName: item.product_name.length > 25 
-        ? item.product_name.substring(0, 25) + '...' 
-        : item.product_name,
-      index
-    }))
+    .map((item, index) => {
+      // Try multiple possible field names for purchase count
+      const purchaseCount = item.purchase_count || item.purchaseCount || item.purchases || item.count || 0
+      const stockQuantity = item.current_stock || item.stock || item.quantity || 0
+      const productName = item.product_name || item.name || item.product || 'Unknown Product'
+      
+      const processed = {
+        ...item,
+        purchaseCount: purchaseCount,
+        stockQuantity: stockQuantity,
+        displayName: productName.length > 25 
+          ? productName.substring(0, 25) + '...' 
+          : productName,
+        index
+      }
+      
+      return processed
+    })
 
   const totalProducts = data.length
-  const topProduct = chartData[0]?.product_name || 'N/A'
+  const topProduct = chartData[0]?.product_name || chartData[0]?.name || 'N/A'
   const avgPurchases = Math.round(chartData.reduce((sum, item) => sum + item.purchaseCount, 0) / chartData.length)
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -67,15 +80,15 @@ const TopProductsChart = ({ data }) => {
       {/* Chart Header with Quick Stats */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <BarChart3 className="w-5 h-5 text-blue-600" />
+                      <div className="flex items-center space-x-3">
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Top 20 Products</p>
+                <p className="text-lg font-semibold text-gray-900">{chartData.length}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Total Products</p>
-              <p className="text-lg font-semibold text-gray-900">{totalProducts}</p>
-            </div>
-          </div>
           <div className="flex items-center space-x-3">
             <div className="bg-green-100 p-2 rounded-lg">
               <Package className="w-5 h-5 text-green-600" />
@@ -102,21 +115,20 @@ const TopProductsChart = ({ data }) => {
         <ResponsiveContainer width="100%" height={400}>
           <BarChart
             data={chartData}
-            layout="horizontal"
-            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
-              type="number" 
-              tick={{ fontSize: 12, fill: '#6b7280' }}
+              dataKey="displayName" 
+              tick={{ fontSize: 11, fill: '#374151', textAnchor: 'end' }}
               axisLine={{ stroke: '#d1d5db' }}
+              angle={-45}
+              height={60}
             />
             <YAxis 
-              type="category" 
-              dataKey="displayName" 
-              width={120}
-              tick={{ fontSize: 11, fill: '#374151' }}
+              tick={{ fontSize: 12, fill: '#6b7280' }}
               axisLine={{ stroke: '#d1d5db' }}
+              tickFormatter={(value) => value.toLocaleString()}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend 
@@ -126,8 +138,9 @@ const TopProductsChart = ({ data }) => {
             <Bar 
               dataKey="purchaseCount" 
               fill="#3b82f6" 
-              radius={[0, 4, 4, 0]}
+              radius={[4, 4, 0, 0]}
               animationDuration={1000}
+              isAnimationActive={true}
             />
           </BarChart>
         </ResponsiveContainer>

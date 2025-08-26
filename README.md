@@ -56,15 +56,6 @@ npm install
 npm run dev
 ```
 
-### **Build**
-```bash
-npm run build
-```
-
-### **Preview**
-```bash
-npm run preview
-```
 ## 📱 **Screenshots**
 <img width="1896" height="937" alt="image" src="https://github.com/user-attachments/assets/213abd6b-5d79-4d5c-8183-d01e3b5a9b53" />
 

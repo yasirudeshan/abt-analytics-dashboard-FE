@@ -149,7 +149,7 @@ const TopProductsChart = ({ data }) => {
       {/* Top 5 Products Highlight */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {chartData.slice(0, 5).map((item, index) => (
-          <div key={item.product_id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+          <div key={item.product_id || `product-${index}`} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-gray-500">#{index + 1}</span>
               <span className="text-xs text-blue-600 font-semibold">{item.purchaseCount.toLocaleString()}</span>

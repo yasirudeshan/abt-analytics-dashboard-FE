@@ -1,12 +1,27 @@
 import React, { useState } from 'react'
 import { Globe, TrendingUp, BarChart3, Eye, Search, Filter, X } from 'lucide-react'
 
-const CountryRevenueTable = ({ data }) => {
+const CountryRevenueTable = ({ data, pagination, onLoadMore, loading }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortField, setSortField] = useState('total_revenue')
   const [sortDirection, setSortDirection] = useState('desc')
   const [showFilters, setShowFilters] = useState(false)
   const [selectedCountry, setSelectedCountry] = useState(null)
+
+  // Debug pagination props (can be removed in production)
+  // console.log('CountryRevenueTable - Pagination props:', pagination)
+  // console.log('CountryRevenueTable - Data length:', data?.length)
+  // console.log('CountryRevenueTable - Loading state:', loading)
+
+  // Keyboard support for Load More button
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      if (!loading && pagination?.hasMore) {
+        onLoadMore()
+      }
+    }
+  }
 
   if (!data || data.length === 0) {
     return (
@@ -19,13 +34,19 @@ const CountryRevenueTable = ({ data }) => {
     )
   }
 
-  // Filter and sort data
+  // Filter data (sorting is handled server-side for revenue)
   const filteredData = data.filter(item =>
     item.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.product_name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  // For client-side sorting of filtered results only (data is already sorted by revenue from server)
   const sortedData = [...filteredData].sort((a, b) => {
+    // If sorting by revenue and no search filter, maintain server order
+    if (sortField === 'total_revenue' && !searchTerm) {
+      return 0 // Keep original order from server
+    }
+    
     let aValue = a[sortField]
     let bValue = b[sortField]
 
@@ -169,9 +190,76 @@ const CountryRevenueTable = ({ data }) => {
         )}
       </div>
 
-      {/* Results Count */}
-      <div className="text-sm text-gray-600">
-        Showing {sortedData.length} of {data.length} results
+      {/* Results Count and Pagination Info */}
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Showing {sortedData.length} of {data.length} results
+            {pagination && pagination.total && (
+              <span className="ml-2 text-gray-500">
+                (Total: {pagination.total.toLocaleString()} records)
+              </span>
+            )}
+          </div>
+          {pagination && pagination.total && (
+            <div className="text-xs text-gray-500">
+              Loaded: {((data.length / pagination.total) * 100).toFixed(1)}%
+            </div>
+          )}
+        </div>
+        
+        {/* Progress Bar */}
+        {pagination && pagination.total && data.length < pagination.total && (
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${Math.min(100, (data.length / pagination.total) * 100)}%` }}
+            ></div>
+          </div>
+        )}
+        
+        
+        {/* Load More Button */}
+        {pagination?.hasMore && (
+          <button
+            id="load-more-button"
+            onClick={onLoadMore}
+            onKeyDown={handleKeyPress}
+            disabled={loading}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-all duration-200 flex items-center space-x-2 font-medium shadow-sm hover:shadow-md disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            aria-label={loading ? 'Loading more data...' : 'Load more revenue data'}
+            tabIndex={0}
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Loading More...</span>
+              </>
+            ) : (
+              <>
+                <TrendingUp className="w-4 h-4" />
+                <span>
+                  Load More 
+                  {pagination?.total ? 
+                    ` (${Math.min(50, pagination.total - data.length)} more)` : 
+                    ' (50 more)'
+                  }
+                </span>
+              </>
+            )}
+          </button>
+        )}
+        
+
+        {/* All data loaded message */}
+        {pagination && !pagination.hasMore && data.length > 0 && (
+          <div className="text-center py-4">
+            <div className="inline-flex items-center space-x-2 text-gray-500 bg-gray-100 px-4 py-2 rounded-lg">
+              <Eye className="w-4 h-4" />
+              <span>All data loaded ({data.length.toLocaleString()} records)</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Table */}

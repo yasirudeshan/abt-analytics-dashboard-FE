@@ -23,13 +23,11 @@ const MonthlySalesChart = ({ data }) => {
     })
     .map(item => ({
       ...item,
-      // Map backend field names to chart expectations
-      salesVolume: item.sales_volume || 0,
+      // Map backend field names to chart expectations and ensure salesVolume is a number
+      salesVolume: Number(item.sales_volume) || 0,
       revenue: item.total_sales || 0,
       // Format month for display
-      displayMonth: `${item.month} ${item.year}`,
-      // Ensure salesVolume is a number
-      salesVolume: Number(item.sales_volume) || 0
+      displayMonth: `${item.month} ${item.year}`
     }))
 
   const peakMonth = chartData.reduce((max, item) => 

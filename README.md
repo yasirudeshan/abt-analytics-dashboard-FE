@@ -4,12 +4,6 @@ A modern, responsive React-based analytics dashboard with enhanced UI/UX design.
 
 ## ✨ Features
 
-### 🎨 **Enhanced Visual Design**
-- **Modern UI Components**: Cards with gradients, shadows, and rounded corners
-- **Color-Coded Sections**: Each dashboard section has its own color theme
-- **Responsive Layout**: Optimized for desktop, tablet, and mobile devices
-- **Glass Morphism**: Subtle backdrop blur effects for modern aesthetics
-
 ### 🚀 **Interactive Elements**
 - **Hover Effects**: Cards lift and scale on hover
 - **Smooth Animations**: Fade-in, slide-up, and scale animations
@@ -49,31 +43,6 @@ A modern, responsive React-based analytics dashboard with enhanced UI/UX design.
 - **Lucide React**: Beautiful icon library
 - **Axios**: HTTP client for API calls
 
-## 🎯 **UI/UX Principles Applied**
-
-### **Visual Hierarchy**
-- Clear information architecture
-- Consistent spacing and typography
-- Logical grouping of related elements
-- Progressive disclosure of information
-
-### **User Experience**
-- Intuitive navigation patterns
-- Consistent interaction feedback
-- Loading states and error handling
-- Responsive design for all devices
-
-### **Performance**
-- Optimized animations (60fps)
-- Lazy loading of components
-- Efficient re-rendering
-- Smooth scrolling and interactions
-
-### **Accessibility**
-- WCAG 2.1 AA compliance
-- Keyboard navigation support
-- Screen reader compatibility
-- High contrast mode support
 
 ## 🚀 **Getting Started**
 
@@ -87,35 +56,14 @@ npm install
 npm run dev
 ```
 
-### **Build**
-```bash
-npm run build
-```
+## 📱 **Screenshots**
+<img width="1896" height="937" alt="image" src="https://github.com/user-attachments/assets/213abd6b-5d79-4d5c-8183-d01e3b5a9b53" />
 
-### **Preview**
-```bash
-npm run preview
-```
+<img width="1886" height="937" alt="image" src="https://github.com/user-attachments/assets/f68a64bc-3c79-4d0a-a2d3-93d726747adb" />
 
-## 🎨 **Customization**
+<img width="1887" height="932" alt="image" src="https://github.com/user-attachments/assets/5003aef7-688e-4f4d-8c62-68cb1ae81565" />
 
-### **Colors & Themes**
-- Primary colors defined in CSS variables
-- Easy to modify color schemes
-- Support for dark mode (future)
-- High contrast mode support
-
-### **Animations**
-- Custom CSS keyframes
-- Configurable animation durations
-- Reduced motion support
-- Performance-optimized transitions
-
-### **Layouts**
-- Responsive grid system
-- Flexible card layouts
-- Adaptive chart sizing
-- Mobile-first approach
+<img width="1883" height="927" alt="image" src="https://github.com/user-attachments/assets/6bb367bf-c107-4c5b-b5ab-d728d744ed4a" />
 
 ## 📱 **Responsive Breakpoints**
 
@@ -195,4 +143,3 @@ npm run preview
 
 ---
 
-**Built with ❤️ using modern web technologies**

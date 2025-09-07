@@ -24,9 +24,9 @@ const Dashboard = () => {
   })
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 50, // Start with 50 records for better UX
+    limit: 20, // Show 20 records per page as requested
     total: 0,
-    hasMore: true
+    totalPages: 1
   })
   const [loading, setLoading] = useState({
     countryRevenue: true,
@@ -82,7 +82,7 @@ const Dashboard = () => {
   }, [])
 
   // Fetch revenue by country data with pagination and sorting
-  const fetchRevenueByCountry = async (page = 1, limit = 50, append = false) => {
+  const fetchRevenueByCountry = async (page = 1, limit = 20) => {
     try {
       console.log(`Fetching revenue by country - Page: ${page}, Limit: ${limit}`)
       setLoading(prev => ({ ...prev, countryRevenue: true }))
@@ -106,48 +106,53 @@ const Dashboard = () => {
       const data = rawData
       const total = responseData.total || responseData.count || rawData.length
       const currentPage = responseData.page || page
-      const totalPages = responseData.totalPages || Math.ceil(total / limit)
+      
+      // Limit total pages to a reasonable number to avoid UI issues
+      // If we have data on current page, assume there might be more, but cap it
+      let totalPages = responseData.totalPages || Math.ceil(total / limit)
+      
+      // If the calculated total pages is unreasonably high, limit it
+      if (totalPages > 1000) {
+        // Estimate based on current data availability
+        if (data.length === limit) {
+          // If we got a full page, assume there are more pages but limit to reasonable number
+          totalPages = Math.min(100, currentPage + 10)
+        } else {
+          // If we got less than full page, this might be the last page
+          totalPages = currentPage
+        }
+      }
+      
+      // If we got less data than requested, we've likely reached the end
+      if (data.length < limit && data.length > 0) {
+        totalPages = currentPage
+      }
       
       console.log(`Revenue by country data - Received: ${data.length} records, Total: ${total}, Page: ${currentPage}/${totalPages}`)
-      
-      // Use hasMore from backend response or calculate it
-      const hasMore = responseData.hasMore !== undefined ? responseData.hasMore : currentPage < totalPages
       
       const newPaginationState = {
         page: currentPage,
         limit: limit,
         total: total,
-        hasMore: hasMore
+        totalPages: totalPages
       }
       console.log('Setting pagination state:', newPaginationState)
       setPagination(newPaginationState)
       
-      // If appending (load more), combine with existing data, otherwise replace
-      const newCountryRevenue = append 
-        ? [...dashboardData.countryRevenue, ...data]
-        : data
-      
-      // Calculate metrics from the new data
-      const totalRevenue = newCountryRevenue.reduce((sum, item) => sum + (item.total_revenue || 0), 0)
-      const countryCount = new Set(newCountryRevenue.map(item => item.country) || []).size
-      const recordCount = newCountryRevenue.reduce((sum, item) => sum + (item.transaction_count || 0), 0)
-      
+      // Always replace data for pagination (no appending)
       setDashboardData(prev => ({
         ...prev,
-        countryRevenue: newCountryRevenue
+        countryRevenue: data
       }))
       
     } catch (err) {
       console.error('Error fetching revenue by country:', err)
       setErrors(prev => ({ ...prev, countryRevenue: 'Failed to load country revenue data' }))
       
-      // Set empty data only if this is the first load
-      if (!append) {
-        setDashboardData(prev => ({
-          ...prev,
-          countryRevenue: []
-        }))
-      }
+      setDashboardData(prev => ({
+        ...prev,
+        countryRevenue: []
+      }))
     } finally {
       setLoading(prev => ({ ...prev, countryRevenue: false }))
     }
@@ -259,45 +264,21 @@ const Dashboard = () => {
     }
   }
 
-  // Load more revenue data
-  const loadMoreRevenueData = async () => {
-    if (pagination.hasMore && !loading.countryRevenue) {
-      // Store the current table scroll position to maintain context
-      const tableContainer = document.querySelector('#country-revenue .overflow-x-auto')
-      const loadMoreButton = document.getElementById('load-more-button')
-      const currentDataLength = dashboardData.countryRevenue.length
+  // Handle page change for revenue data
+  const handleRevenuePageChange = async (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.totalPages && !loading.countryRevenue) {
+      await fetchRevenueByCountry(newPage, pagination.limit)
       
-      await fetchRevenueByCountry(pagination.page + 1, pagination.limit, true)
-      
-      // After data loads, scroll to show the newly loaded data
+      // Scroll to top of the table after page change
       setTimeout(() => {
-        // Try to scroll to show the area where new data was added
         const countryRevenueSection = document.getElementById('country-revenue')
-        if (countryRevenueSection && tableContainer) {
-          // Calculate position to show the newly loaded rows
-          const tableRows = tableContainer.querySelectorAll('tbody tr')
-          if (tableRows.length > currentDataLength) {
-            // Scroll to show the first newly loaded row
-            const newRowIndex = Math.max(0, currentDataLength - 10) // Show a few rows before the new ones for context
-            const targetRow = tableRows[newRowIndex]
-            if (targetRow) {
-              targetRow.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-              })
-            }
-          } else {
-            // Fallback: scroll to the load more button area
-            const loadMoreBtn = document.getElementById('load-more-button')
-            if (loadMoreBtn) {
-              loadMoreBtn.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-              })
-            }
-          }
+        if (countryRevenueSection) {
+          countryRevenueSection.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          })
         }
-      }, 200) // Slightly longer delay to ensure table is rendered
+      }, 100)
     }
   }
 
@@ -311,12 +292,12 @@ const Dashboard = () => {
       console.log('Current loading state before API calls:', loading)
       
       // Reset pagination for fresh load
-      setPagination(prev => ({ ...prev, page: 1, hasMore: true }))
+      setPagination(prev => ({ ...prev, page: 1 }))
       
       // Execute all API calls in parallel
       const promises = [
         fetchDashboardSummary(), // Get exact totals first
-        fetchRevenueByCountry(1, 50, false), // Start with page 1, 50 records
+        fetchRevenueByCountry(1, 20), // Start with page 1, 20 records
         fetchTopProducts(),
         fetchSalesByMonth(),
         fetchTopRegions()
@@ -624,7 +605,7 @@ const Dashboard = () => {
             <CountryRevenueTable 
               data={dashboardData.countryRevenue} 
               pagination={pagination}
-              onLoadMore={loadMoreRevenueData}
+              onPageChange={handleRevenuePageChange}
               loading={loading.countryRevenue}
             />
             

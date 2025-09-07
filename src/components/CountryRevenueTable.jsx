@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { Globe, TrendingUp, BarChart3, Eye, Search, Filter, X } from 'lucide-react'
+import { Globe, TrendingUp, BarChart3, Eye, Search, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
-const CountryRevenueTable = ({ data, pagination, onLoadMore, loading }) => {
+const CountryRevenueTable = ({ data, pagination, onPageChange, loading }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortField, setSortField] = useState('total_revenue')
   const [sortDirection, setSortDirection] = useState('desc')
@@ -13,14 +13,53 @@ const CountryRevenueTable = ({ data, pagination, onLoadMore, loading }) => {
   // console.log('CountryRevenueTable - Data length:', data?.length)
   // console.log('CountryRevenueTable - Loading state:', loading)
 
-  // Keyboard support for Load More button
-  const handleKeyPress = (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      if (!loading && pagination?.hasMore) {
-        onLoadMore()
-      }
+  // Handle pagination navigation
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination?.totalPages && !loading) {
+      onPageChange(newPage)
     }
+  }
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const totalPages = pagination?.totalPages || 1
+    const currentPage = pagination?.page || 1
+    const pages = []
+    
+    // If only one page, return early
+    if (totalPages <= 1) return [1]
+    
+    // Always show first page
+    pages.push(1)
+    
+    // Show pages around current page
+    const start = Math.max(2, currentPage - 2)
+    const end = Math.min(totalPages - 1, currentPage + 2)
+    
+    // Add ellipsis if needed
+    if (start > 2) pages.push('...')
+    
+    // Add pages around current
+    for (let i = start; i <= end; i++) {
+      if (i !== 1 && i !== totalPages) pages.push(i)
+    }
+    
+    // Only show last page if it's reasonable (not too far from current page)
+    // and don't show ellipsis + last page if totalPages is very high
+    if (totalPages <= 50 || currentPage >= totalPages - 10) {
+      // Add ellipsis if needed
+      if (end < totalPages - 1) pages.push('...')
+      
+      // Always show last page for reasonable page counts
+      if (!pages.includes(totalPages)) pages.push(totalPages)
+    } else {
+      // For very high page counts, just show a few more pages ahead
+      const maxShow = Math.min(totalPages, currentPage + 5)
+      if (end < maxShow - 1) pages.push('...')
+      if (end < maxShow && !pages.includes(maxShow)) pages.push(maxShow)
+    }
+    
+    return pages
   }
 
   if (!data || data.length === 0) {
@@ -194,69 +233,26 @@ const CountryRevenueTable = ({ data, pagination, onLoadMore, loading }) => {
       <div className="space-y-3">
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600">
-            Showing {sortedData.length} of {data.length} results
+            Showing {sortedData.length} results on page {pagination?.page || 1}
             {pagination && pagination.total && (
               <span className="ml-2 text-gray-500">
                 (Total: {pagination.total.toLocaleString()} records)
               </span>
             )}
           </div>
-          {pagination && pagination.total && (
+          {pagination && pagination.totalPages && (
             <div className="text-xs text-gray-500">
-              Loaded: {((data.length / pagination.total) * 100).toFixed(1)}%
+              Page {pagination.page || 1} of {pagination.totalPages}
             </div>
           )}
         </div>
         
-        {/* Progress Bar */}
-        {pagination && pagination.total && data.length < pagination.total && (
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${Math.min(100, (data.length / pagination.total) * 100)}%` }}
-            ></div>
-          </div>
-        )}
-        
-        
-        {/* Load More Button */}
-        {pagination?.hasMore && (
-          <button
-            id="load-more-button"
-            onClick={onLoadMore}
-            onKeyDown={handleKeyPress}
-            disabled={loading}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-all duration-200 flex items-center space-x-2 font-medium shadow-sm hover:shadow-md disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            aria-label={loading ? 'Loading more data...' : 'Load more revenue data'}
-            tabIndex={0}
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Loading More...</span>
-              </>
-            ) : (
-              <>
-                <TrendingUp className="w-4 h-4" />
-                <span>
-                  Load More 
-                  {pagination?.total ? 
-                    ` (${Math.min(50, pagination.total - data.length)} more)` : 
-                    ' (50 more)'
-                  }
-                </span>
-              </>
-            )}
-          </button>
-        )}
-        
-
-        {/* All data loaded message */}
-        {pagination && !pagination.hasMore && data.length > 0 && (
+        {/* Loading indicator */}
+        {loading && (
           <div className="text-center py-4">
             <div className="inline-flex items-center space-x-2 text-gray-500 bg-gray-100 px-4 py-2 rounded-lg">
-              <Eye className="w-4 h-4" />
-              <span>All data loaded ({data.length.toLocaleString()} records)</span>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+              <span>Loading page {pagination?.page || 1}...</span>
             </div>
           </div>
         )}
@@ -343,6 +339,51 @@ const CountryRevenueTable = ({ data, pagination, onLoadMore, loading }) => {
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-center space-x-2 py-6">
+          {/* Previous Button */}
+          <button
+            onClick={() => handlePageChange((pagination.page || 1) - 1)}
+            disabled={loading || (pagination.page || 1) <= 1}
+            className="flex items-center space-x-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>Previous</span>
+          </button>
+
+          {/* Page Numbers */}
+          <div className="flex items-center space-x-1">
+            {getPageNumbers().map((pageNum, index) => (
+              <button
+                key={index}
+                onClick={() => typeof pageNum === 'number' ? handlePageChange(pageNum) : null}
+                disabled={loading || pageNum === '...'}
+                className={`px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
+                  pageNum === (pagination.page || 1)
+                    ? 'bg-blue-600 text-white'
+                    : pageNum === '...'
+                    ? 'text-gray-400 cursor-default'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+
+          {/* Next Button */}
+          <button
+            onClick={() => handlePageChange((pagination.page || 1) + 1)}
+            disabled={loading || (pagination.page || 1) >= (pagination.totalPages || 1) || (data && data.length < pagination.limit)}
+            className="flex items-center space-x-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            <span>Next</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Detail Modal */}
       {selectedCountry && (
